@@ -315,6 +315,17 @@
 
     .mic-hint.listening { color: #e03131; font-weight: 600; }
 
+    .heard-display {
+      font-size: 13px;
+      color: #7b8ec8;
+      text-align: center;
+      margin-bottom: 10px;
+      min-height: 20px;
+      font-style: italic;
+    }
+
+    .heard-display strong { color: #3b5bdb; font-style: normal; }
+
     /* ── Empty state ── */
     .empty {
       text-align: center;
@@ -408,6 +419,7 @@
   function renderProblems(left, right) {
     const content = document.getElementById('content');
     content.innerHTML = `
+      <div class="heard-display" id="heard"></div>
       <div class="problems-grid">
         <div class="column">
           <div class="col-header">Links</div>
@@ -499,21 +511,26 @@
   function initSpeech() {
     if (!SR) return;
     recognition = new SR();
-    recognition.lang = 'nl-NL';
+    recognition.lang = 'de-DE';
     recognition.continuous = true;
     recognition.interimResults = false;
     recognition.maxAlternatives = 3;
 
     recognition.onresult = (e) => {
       const result = e.results[e.results.length - 1];
+      const rawText = result[0].transcript.trim();
+      const heardEl = document.getElementById('heard');
+
       for (let j = 0; j < result.length; j++) {
         const text = result[j].transcript.trim().toLowerCase();
         const num = parseSpoken(text);
         if (num !== null && num >= 0 && num <= 100) {
+          if (heardEl) heardEl.innerHTML = `Gehört: „${rawText}" → <strong>${num}</strong>`;
           fillByVoice(num);
           return;
         }
       }
+      if (heardEl) heardEl.innerHTML = `Gehört: „${rawText}" – <span style="color:#e03131">nicht erkannt</span>`;
     };
 
     recognition.onend = () => {
