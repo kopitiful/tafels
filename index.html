@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tafels Oefenen</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #eef2ff;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 110px;
+      min-height: 100vh;
+      background: #3b5bdb;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 10px 20px;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .sidebar-title {
+      color: #bac8ff;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .tafel-btn {
+      width: 78px;
+      height: 42px;
+      border: none;
+      border-radius: 10px;
+      font-size: 20px;
+      font-weight: 700;
+      cursor: pointer;
+      background: rgba(255,255,255,0.15);
+      color: white;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    .tafel-btn:hover { background: rgba(255,255,255,0.28); transform: scale(1.04); }
+    .tafel-btn.active { background: #fcc419; color: #1a1a2e; }
+
+    /* ── Main ── */
+    .main {
+      flex: 1;
+      padding: 28px 32px 40px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+    }
+
+    .page-title {
+      font-size: 30px;
+      font-weight: 800;
+      color: #1c3177;
+    }
+
+    .timer-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .timer-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #7b8ec8;
+      font-weight: 600;
+    }
+
+    .timer {
+      font-size: 38px;
+      font-weight: 800;
+      color: #3b5bdb;
+      background: white;
+      padding: 6px 22px;
+      border-radius: 14px;
+      box-shadow: 0 2px 10px rgba(59,91,219,0.18);
+      letter-spacing: 2px;
+      min-width: 110px;
+      text-align: center;
+      transition: color 0.3s;
+    }
+
+    .timer.warning { color: #e03131; }
+    .timer.warning { animation: pulse 0.8s ease-in-out infinite; }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.06); }
+    }
+
+    /* ── Grid ── */
+    .problems-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .column {
+      background: white;
+      border-radius: 16px;
+      padding: 22px 20px;
+      box-shadow: 0 4px 16px rgba(59,91,219,0.08);
+    }
+
+    .col-header {
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #7b8ec8;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #eef2ff;
+    }
+
+    .problem {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 0;
+    }
+
+    .problem-text {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1c3177;
+      width: 100px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .eq {
+      font-size: 18px;
+      color: #888;
+    }
+
+    .answer-input {
+      width: 64px;
+      height: 34px;
+      border: 2px solid #d0d9ff;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: 700;
+      text-align: center;
+      color: #1c3177;
+      outline: none;
+      background: #f8f9ff;
+      transition: border-color 0.15s, background 0.15s;
+      -moz-appearance: textfield;
+    }
+
+    .answer-input::-webkit-inner-spin-button,
+    .answer-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+    .answer-input:focus { border-color: #3b5bdb; background: white; }
+
+    .answer-input.correct {
+      border-color: #2f9e44;
+      background: #ebfbee;
+      color: #2f9e44;
+    }
+
+    .answer-input.wrong {
+      border-color: #e03131;
+      background: #fff5f5;
+      color: #e03131;
+    }
+
+    .answer-input:disabled {
+      background: #f1f3f9;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    /* ── Bottom bar ── */
+    .bottom-bar {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 24px;
+      margin-top: 24px;
+      flex-wrap: wrap;
+    }
+
+    .check-btn {
+      padding: 12px 42px;
+      background: #3b5bdb;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      box-shadow: 0 4px 14px rgba(59,91,219,0.3);
+    }
+
+    .check-btn:hover { background: #2f4ac0; transform: translateY(-1px); }
+    .check-btn:active { transform: translateY(0); }
+
+    .reset-btn {
+      padding: 12px 28px;
+      background: white;
+      color: #3b5bdb;
+      border: 2px solid #3b5bdb;
+      border-radius: 12px;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .reset-btn:hover { background: #eef2ff; }
+
+    .score-display {
+      font-size: 20px;
+      font-weight: 800;
+      color: #1c3177;
+    }
+
+    .score-display .hi { color: #2f9e44; }
+    .score-display .lo { color: #e03131; }
+
+    .time-up-banner {
+      display: none;
+      background: #fff5f5;
+      border: 2px solid #e03131;
+      color: #e03131;
+      font-weight: 700;
+      font-size: 16px;
+      text-align: center;
+      padding: 10px 24px;
+      border-radius: 10px;
+    }
+
+    /* ── Mic button ── */
+    .mic-btn {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: none;
+      background: white;
+      box-shadow: 0 2px 10px rgba(59,91,219,0.18);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+      flex-shrink: 0;
+    }
+
+    .mic-btn svg { width: 26px; height: 26px; }
+    .mic-btn .mic-icon { fill: #3b5bdb; transition: fill 0.2s; }
+
+    .mic-btn:hover { background: #eef2ff; transform: scale(1.06); }
+
+    .mic-btn.active {
+      background: #e03131;
+      box-shadow: 0 0 0 6px rgba(224,49,49,0.2);
+      animation: mic-pulse 1.2s ease-in-out infinite;
+    }
+
+    .mic-btn.active .mic-icon { fill: white; }
+
+    @keyframes mic-pulse {
+      0%, 100% { box-shadow: 0 0 0 4px rgba(224,49,49,0.2); }
+      50%       { box-shadow: 0 0 0 10px rgba(224,49,49,0.08); }
+    }
+
+    .mic-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .mic-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #7b8ec8;
+      font-weight: 600;
+    }
+
+    .mic-hint {
+      font-size: 11px;
+      color: #aab4d8;
+      margin-top: 2px;
+      height: 14px;
+    }
+
+    .mic-hint.listening { color: #e03131; font-weight: 600; }
+
+    /* ── Empty state ── */
+    .empty {
+      text-align: center;
+      color: #a5b4d6;
+      font-size: 22px;
+      font-weight: 600;
+      margin-top: 100px;
+    }
+
+    .empty span { font-size: 48px; display: block; margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-title">Tafel</div>
+  <div id="sidebar-btns"></div>
+</aside>
+
+<main class="main">
+  <div class="header">
+    <div class="page-title" id="page-title">Kies een tafel</div>
+    <div style="display:flex;align-items:center;gap:20px">
+      <div class="mic-wrap">
+        <div class="mic-label">Sprache</div>
+        <button class="mic-btn" id="mic-btn" title="Mikrofon einschalten"
+                onmousedown="event.preventDefault()" onclick="toggleMic()">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path class="mic-icon" d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm-1 18.93V22h2v-2.07A8 8 0 0 0 20 12h-2a6 6 0 0 1-12 0H4a8 8 0 0 0 7 7.93z"/>
+          </svg>
+        </button>
+        <div class="mic-hint" id="mic-hint">aus</div>
+      </div>
+      <div class="timer-wrap">
+        <div class="timer-label">Tijd</div>
+        <div class="timer" id="timer">2:00</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="content">
+    <div class="empty"><span>✏️</span>Klik links op een tafel om te beginnen!</div>
+  </div>
+</main>
+
+<script>
+  let timerInterval = null;
+  let timeLeft = 120;
+  let timerStarted = false;
+  let currentTable = null;
+
+  // Build sidebar
+  const sidebarBtns = document.getElementById('sidebar-btns');
+  sidebarBtns.style.cssText = 'display:flex;flex-direction:column;gap:8px;align-items:center';
+  for (let i = 1; i <= 10; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'tafel-btn';
+    btn.textContent = i;
+    btn.dataset.n = i;
+    btn.onclick = () => selectTable(i);
+    sidebarBtns.appendChild(btn);
+  }
+
+  function selectTable(n) {
+    setMicActive(false);
+    clearInterval(timerInterval);
+    timerStarted = false;
+    timeLeft = 120;
+    currentTable = n;
+
+    document.querySelectorAll('.tafel-btn').forEach(b =>
+      b.classList.toggle('active', +b.dataset.n === n)
+    );
+    document.getElementById('page-title').textContent = `Tafel van ${n}`;
+    const timerEl = document.getElementById('timer');
+    timerEl.textContent = '2:00';
+    timerEl.classList.remove('warning');
+
+    // pool: all n×T and T×n for n=1..10
+    const pool = [];
+    for (let i = 1; i <= 10; i++) pool.push([n, i]);
+    for (let i = 1; i <= 10; i++) pool.push([i, n]);
+
+    // both columns independently shuffled
+    const left  = [...pool].sort(() => Math.random() - 0.5);
+    const right = [...pool].sort(() => Math.random() - 0.5);
+
+    renderProblems(left, right);
+  }
+
+  function renderProblems(left, right) {
+    const content = document.getElementById('content');
+    content.innerHTML = `
+      <div class="problems-grid">
+        <div class="column">
+          <div class="col-header">Links</div>
+          ${left.map((p, i) => problemHTML(p, 'L', i)).join('')}
+        </div>
+        <div class="column">
+          <div class="col-header">Rechts</div>
+          ${right.map((p, i) => problemHTML(p, 'R', i)).join('')}
+        </div>
+      </div>
+      <div class="bottom-bar">
+        <div class="time-up-banner" id="time-up">⏰ Tijd is om! De antwoorden worden nu gecontroleerd.</div>
+        <div class="score-display" id="score" style="display:none"></div>
+        <button class="check-btn" onclick="checkAll()">Controleer antwoorden</button>
+        <button class="reset-btn" onclick="selectTable(currentTable)">Opnieuw</button>
+      </div>
+    `;
+
+    voiceIdx = 0;
+
+    document.querySelectorAll('.answer-input').forEach(inp => {
+      inp.addEventListener('focus', () => {
+        startTimerOnce();
+        // sync voiceIdx when user clicks a field manually
+        const all = [...document.querySelectorAll('.answer-input')];
+        voiceIdx = all.indexOf(inp);
+      });
+      inp.addEventListener('input', () => checkSingle(inp));
+      inp.addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+          const all = [...document.querySelectorAll('.answer-input:not(:disabled)')];
+          const idx = all.indexOf(e.target);
+          if (idx < all.length - 1) all[idx + 1].focus();
+        }
+      });
+    });
+  }
+
+  function problemHTML([a, b], col, i) {
+    return `
+      <div class="problem">
+        <span class="problem-text">${a} × ${b}</span>
+        <span class="eq">=</span>
+        <input type="number" class="answer-input"
+               id="inp-${col}-${i}"
+               data-answer="${a * b}"
+               autocomplete="off">
+      </div>`;
+  }
+
+  function startTimerOnce() {
+    if (timerStarted) return;
+    timerStarted = true;
+    timerInterval = setInterval(tick, 1000);
+  }
+
+  function tick() {
+    timeLeft--;
+    const m = Math.floor(timeLeft / 60);
+    const s = timeLeft % 60;
+    const timerEl = document.getElementById('timer');
+    timerEl.textContent = `${m}:${String(s).padStart(2, '0')}`;
+    if (timeLeft <= 30) timerEl.classList.add('warning');
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      timerEl.textContent = '0:00';
+      setMicActive(false);
+      document.querySelectorAll('.answer-input').forEach(i => i.disabled = true);
+      const banner = document.getElementById('time-up');
+      if (banner) banner.style.display = 'block';
+      checkAll();
+    }
+  }
+
+  function checkSingle(input) {
+    const val = input.value.trim();
+    input.classList.remove('correct', 'wrong');
+    if (!val) return;
+    const correct = +input.dataset.answer === +val;
+    input.classList.add(correct ? 'correct' : 'wrong');
+  }
+
+  // ── Speech Recognition ──
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recognition = null;
+  let micActive = false;
+  let voiceIdx = 0;
+
+  function initSpeech() {
+    if (!SR) return;
+    recognition = new SR();
+    recognition.lang = 'nl-NL';
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 3;
+
+    recognition.onresult = (e) => {
+      const result = e.results[e.results.length - 1];
+      for (let j = 0; j < result.length; j++) {
+        const text = result[j].transcript.trim().toLowerCase();
+        const num = parseSpoken(text);
+        if (num !== null && num >= 0 && num <= 100) {
+          fillByVoice(num);
+          return;
+        }
+      }
+    };
+
+    recognition.onend = () => {
+      if (micActive) { try { recognition.start(); } catch(e) {} }
+    };
+
+    recognition.onerror = (e) => {
+      if (e.error === 'not-allowed') {
+        setMicActive(false);
+        alert('Mikrofon-Zugriff verweigert. Bitte Browsereinstellungen prüfen.');
+      }
+    };
+  }
+
+  function parseSpoken(text) {
+    // 1. digits already in transcript (most reliable)
+    const m = text.match(/\d+/);
+    if (m) { const n = parseInt(m[0]); if (n >= 0 && n <= 100) return n; }
+
+    // 2. word map: Dutch + German
+    const w = {
+      // Dutch
+      'nul':0,'een':1,'één':1,'twee':2,'drie':3,'vier':4,'vijf':5,
+      'zes':6,'zeven':7,'acht':8,'negen':9,'tien':10,
+      'elf':11,'twaalf':12,'dertien':13,'veertien':14,'vijftien':15,
+      'zestien':16,'zeventien':17,'achttien':18,'negentien':19,
+      'twintig':20,'dertig':30,'veertig':40,'vijftig':50,
+      'zestig':60,'zeventig':70,'tachtig':80,'negentig':90,'honderd':100,
+      // German
+      'null':0,'eins':1,'zwei':2,'fünf':5,'sechs':6,'sieben':7,
+      'neun':9,'zehn':10,'zwölf':12,'dreizehn':13,'vierzehn':14,
+      'fünfzehn':15,'sechzehn':16,'siebzehn':17,'achtzehn':18,'neunzehn':19,
+      'zwanzig':20,'dreißig':30,'vierzig':40,'fünfzig':50,
+      'sechzig':60,'siebzig':70,'achtzig':80,'neunzig':90,'hundert':100
+    };
+    if (w[text] !== undefined) return w[text];
+
+    // 3. German compound: [ones]und[tens] → e.g. "vierundzwanzig" = 24
+    const de = text.match(/^(.+?)und(.+)$/);
+    if (de) {
+      const ones = w[de[1]], tens = w[de[2]];
+      if (ones !== undefined && tens !== undefined && tens % 10 === 0 && tens > 0)
+        return tens + ones;
+    }
+
+    // 4. Dutch compound: [ones]en[tens] → e.g. "vierentwintig" = 24
+    const nl = text.match(/^(.+?)(?:ën|en)(.+)$/);
+    if (nl) {
+      const ones = w[nl[1]], tens = w[nl[2]];
+      if (ones !== undefined && tens !== undefined && tens % 10 === 0 && tens > 0)
+        return tens + ones;
+    }
+
+    return null;
+  }
+
+  function fillByVoice(num) {
+    const inputs = [...document.querySelectorAll('.answer-input:not(:disabled)')];
+    if (!inputs.length) return;
+
+    let idx = inputs.indexOf(document.activeElement);
+    if (idx === -1) idx = Math.min(voiceIdx, inputs.length - 1);
+
+    inputs[idx].value = num;
+    checkSingle(inputs[idx]);
+    startTimerOnce();
+
+    // brief scale flash
+    inputs[idx].style.transform = 'scale(1.18)';
+    setTimeout(() => { if (inputs[idx]) inputs[idx].style.transform = ''; }, 130);
+
+    // advance to next empty field
+    voiceIdx = idx + 1;
+    while (voiceIdx < inputs.length && inputs[voiceIdx].value !== '') voiceIdx++;
+    if (voiceIdx < inputs.length) inputs[voiceIdx].focus();
+  }
+
+  function toggleMic() {
+    if (!recognition) {
+      alert('Spracherkennung wird von diesem Browser nicht unterstützt.\n(Chrome / Edge empfohlen)');
+      return;
+    }
+    setMicActive(!micActive);
+  }
+
+  function setMicActive(on) {
+    micActive = on;
+    const btn = document.getElementById('mic-btn');
+    const hint = document.getElementById('mic-hint');
+    if (btn) btn.classList.toggle('active', on);
+    if (hint) {
+      hint.textContent = on ? '● hört zu …' : 'aus';
+      hint.classList.toggle('listening', on);
+    }
+    if (!recognition) return;
+    if (on) { try { recognition.start(); } catch(e) {} }
+    else     { try { recognition.stop();  } catch(e) {} }
+  }
+
+  initSpeech();
+
+  function checkAll() {
+    const inputs = document.querySelectorAll('.answer-input');
+    let correct = 0;
+    inputs.forEach(inp => {
+      checkSingle(inp);
+      if (inp.value && +inp.value === +inp.dataset.answer) correct++;
+    });
+    const filled = [...inputs].filter(i => i.value.trim()).length;
+    const total = inputs.length;
+    const scoreEl = document.getElementById('score');
+    if (!scoreEl) return;
+    scoreEl.style.display = 'block';
+    const pct = Math.round((correct / total) * 100);
+    const cls = pct >= 80 ? 'hi' : pct >= 50 ? '' : 'lo';
+    scoreEl.innerHTML = `<span class="${cls}">${correct}</span> / ${total} goed &nbsp;(${pct}%)`;
+  }
+</script>
+</body>
+</html>
