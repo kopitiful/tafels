@@ -514,7 +514,17 @@
     recognition.lang = 'de-DE';
     recognition.continuous = true;
     recognition.interimResults = false;
-    recognition.maxAlternatives = 3;
+    recognition.maxAlternatives = 5;
+
+    // Hint to Chrome: only expect numbers 1–100
+    const SGL = window.SpeechGrammarList || window.webkitSpeechGrammarList;
+    if (SGL) {
+      const nums = Array.from({length: 100}, (_, i) => i + 1).join(' | ');
+      const grammar = `#JSGF V1.0; grammar numbers; public <number> = ${nums};`;
+      const list = new SGL();
+      list.addFromString(grammar, 1);
+      recognition.grammars = list;
+    }
 
     recognition.onresult = (e) => {
       const result = e.results[e.results.length - 1];
@@ -559,14 +569,22 @@
       'zestien':16,'zeventien':17,'achttien':18,'negentien':19,
       'twintig':20,'dertig':30,'veertig':40,'vijftig':50,
       'zestig':60,'zeventig':70,'tachtig':80,'negentig':90,'honderd':100,
-      // German
-      'null':0,'eins':1,'zwei':2,'fünf':5,'sechs':6,'sieben':7,
+      // German (including common Chrome transcription variants)
+      'null':0,'eins':1,'ein':1,'eine':1,'zwei':2,'zwo':2,'fünf':5,'sechs':6,'sieben':7,
       'neun':9,'zehn':10,'zwölf':12,'dreizehn':13,'vierzehn':14,
       'fünfzehn':15,'sechzehn':16,'siebzehn':17,'achtzehn':18,'neunzehn':19,
       'zwanzig':20,'dreißig':30,'vierzig':40,'fünfzig':50,
       'sechzig':60,'siebzig':70,'achtzig':80,'neunzig':90,'hundert':100
     };
     if (w[text] !== undefined) return w[text];
+
+    // "nulleins" / "null eins" → strip leading "null" and retry
+    const withoutNull = text.replace(/^null\s*/, '');
+    if (withoutNull && withoutNull !== text) {
+      const m2 = withoutNull.match(/\d+/);
+      if (m2) { const n = parseInt(m2[0]); if (n >= 0 && n <= 100) return n; }
+      if (w[withoutNull] !== undefined) return w[withoutNull];
+    }
 
     // 3. German compound: [ones]und[tens] → e.g. "vierundzwanzig" = 24
     const de = text.match(/^(.+?)und(.+)$/);
