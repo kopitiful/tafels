@@ -516,29 +516,28 @@
 
   // ── Speech Recognition ──
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  let recognition = null;
+  let recognitions = [];
   let micActive = false;
   let voiceIdx = 0;
+  let lastFillTime = 0;
 
-  function initSpeech() {
-    if (!SR) return;
-    recognition = new SR();
-    recognition.lang = 'nl-NL';
-    recognition.continuous = true;
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 5;
+  function makeRecognition(lang) {
+    const r = new SR();
+    r.lang = lang;
+    r.continuous = true;
+    r.interimResults = false;
+    r.maxAlternatives = 5;
 
-    // Hint to Chrome: only expect numbers 1–100
     const SGL = window.SpeechGrammarList || window.webkitSpeechGrammarList;
     if (SGL) {
       const nums = Array.from({length: 100}, (_, i) => i + 1).join(' | ');
       const grammar = `#JSGF V1.0; grammar numbers; public <number> = ${nums};`;
       const list = new SGL();
       list.addFromString(grammar, 1);
-      recognition.grammars = list;
+      r.grammars = list;
     }
 
-    recognition.onresult = (e) => {
+    r.onresult = (e) => {
       const result = e.results[e.results.length - 1];
       const rawText = result[0].transcript.trim();
       const heardEl = document.getElementById('heard');
@@ -555,16 +554,21 @@
       if (heardEl) heardEl.innerHTML = `Gehört: „${rawText}" – <span style="color:#e03131">nicht erkannt</span>`;
     };
 
-    recognition.onend = () => {
-      if (micActive) { try { recognition.start(); } catch(e) {} }
-    };
+    r.onend = () => { if (micActive) { try { r.start(); } catch(e) {} } };
 
-    recognition.onerror = (e) => {
+    r.onerror = (e) => {
       if (e.error === 'not-allowed') {
         setMicActive(false);
         alert('Mikrofon-Zugriff verweigert. Bitte Browsereinstellungen prüfen.');
       }
     };
+
+    return r;
+  }
+
+  function initSpeech() {
+    if (!SR) return;
+    recognitions = ['de-DE', 'nl-NL'].map(makeRecognition);
   }
 
   function parseSpoken(text) {
@@ -627,6 +631,11 @@
   }
 
   function fillByVoice(num) {
+    // debounce: beide Instanzen könnten gleichzeitig feuern
+    const now = Date.now();
+    if (now - lastFillTime < 600) return;
+    lastFillTime = now;
+
     const inputs = [...document.querySelectorAll('.answer-input:not(:disabled)')];
     if (!inputs.length) return;
 
@@ -648,7 +657,7 @@
   }
 
   function toggleMic() {
-    if (!recognition) {
+    if (!recognitions.length) {
       alert('Spracherkennung wird von diesem Browser nicht unterstützt.\n(Chrome / Edge empfohlen)');
       return;
     }
@@ -664,9 +673,10 @@
       hint.textContent = on ? '● hört zu …' : 'aus';
       hint.classList.toggle('listening', on);
     }
-    if (!recognition) return;
-    if (on) { try { recognition.start(); } catch(e) {} }
-    else     { try { recognition.stop();  } catch(e) {} }
+    recognitions.forEach(r => {
+      if (on) { try { r.start(); } catch(e) {} }
+      else    { try { r.stop();  } catch(e) {} }
+    });
   }
 
   initSpeech();
