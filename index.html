@@ -52,6 +52,14 @@
     .tafel-btn:hover { background: rgba(255,255,255,0.28); transform: scale(1.04); }
     .tafel-btn.active { background: #fcc419; color: #1a1a2e; }
 
+    .mixed-btn {
+      margin-top: 10px;
+      background: rgba(255,255,255,0.3);
+      border: 2px dashed rgba(255,255,255,0.65);
+      font-size: 15px;
+    }
+    .mixed-btn.active { background: #fcc419; color: #1a1a2e; border-color: #fcc419; }
+
     /* ── Main ── */
     .main {
       flex: 1;
@@ -401,6 +409,13 @@
     sidebarBtns.appendChild(btn);
   }
 
+  const mixedBtn = document.createElement('button');
+  mixedBtn.className = 'tafel-btn mixed-btn';
+  mixedBtn.textContent = 'Mix';
+  mixedBtn.dataset.n = 'mixed';
+  mixedBtn.onclick = () => selectTable('mixed');
+  sidebarBtns.appendChild(mixedBtn);
+
   function selectTable(n) {
     setMicActive(false);
     clearInterval(timerInterval);
@@ -409,23 +424,41 @@
     currentTable = n;
 
     document.querySelectorAll('.tafel-btn').forEach(b =>
-      b.classList.toggle('active', +b.dataset.n === n)
+      b.classList.toggle('active', String(b.dataset.n) === String(n))
     );
-    document.getElementById('page-title').textContent = `Tafel van ${n}`;
+    document.getElementById('page-title').textContent =
+      n === 'mixed' ? 'Mix: alle tafels + tafel van 10' : `Tafel van ${n}`;
     const timerEl = document.getElementById('timer');
     timerEl.textContent = '2:00';
     timerEl.classList.remove('warning');
 
-    // pool: all n×T and T×n for n=1..10
-    const pool = [];
-    for (let i = 1; i <= 10; i++) pool.push([n, i]);
-    for (let i = 1; i <= 10; i++) pool.push([i, n]);
+    const pool = buildPool(n);
 
     // both columns independently shuffled
     const left  = [...pool].sort(() => Math.random() - 0.5);
     const right = [...pool].sort(() => Math.random() - 0.5);
 
     renderProblems(left, right);
+  }
+
+  function buildPool(n) {
+    if (n === 'mixed') {
+      const pool = [];
+      // alle 10er zahlen: de volledige tafel van 10
+      for (let i = 1; i <= 10; i++) pool.push([10, i]);
+      // aangevuld met willekeurige opgaven uit de andere tafels
+      for (let i = 0; i < 10; i++) {
+        const t = Math.floor(Math.random() * 9) + 1; // 1..9
+        const f = Math.floor(Math.random() * 10) + 1; // 1..10
+        pool.push(Math.random() < 0.5 ? [t, f] : [f, t]);
+      }
+      return pool;
+    }
+    // pool: all n×i and i×n for i=1..10
+    const pool = [];
+    for (let i = 1; i <= 10; i++) pool.push([n, i]);
+    for (let i = 1; i <= 10; i++) pool.push([i, n]);
+    return pool;
   }
 
   function renderProblems(left, right) {
